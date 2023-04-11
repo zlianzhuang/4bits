@@ -254,14 +254,11 @@ function stop_detals() {
 	# k8s
 	echo "stop minikube"
 	su - lzzhang -c 'minikube stop'
-	su - lzzhang -c 'minikube delete'
-	#if [ -d /home/lzzhang/minikube_init_data_backup ]
-	#then
-	#	echo "remove old minikube"
-	#	/bin/rm -rf /home/lzzhang/.minikube/
-	#	echo "restore minikube data"
-	#	su - lzzhang -c 'cp -rf /home/lzzhang/minikube_init_data_backup/1.21/minikube/ /home/lzzhang/.minikube'
-	#fi
+	if [ -f /home/lzzhang/.delete_minikube ]
+	then
+		echo "remove old minikube"
+		su - lzzhang -c 'minikube delete'
+	fi
 }
 
 function start_utile(){
