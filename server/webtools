@@ -1,0 +1,385 @@
+#!/usr/bin/env bash
+#set -Eeo pipefail
+
+do_start=0
+do_stop=0
+do_create=0
+do_delete=0
+no_root_user=lzzhang
+config=../config.json
+
+# postgres
+pgname[0]=`jq -r '.pg15name' ${config}`
+pgport[0]=`jq -r '.pg15portweb' ${config}`
+pgname[1]=`jq -r '.pg15namereadwrite' ${config}`
+pgport[1]=`jq -r '.pg15portwebreadwrite' ${config}`
+pgname[2]=`jq -r '.pg15namereadonly' ${config}`
+pgport[2]=`jq -r '.pg15portwebreadonly' ${config}`
+pgname[3]=`jq -r '.pg14name' ${config}`
+pgport[3]=`jq -r '.pg14portweb' ${config}`
+pgname[4]=`jq -r '.pg14namereadwrite' ${config}`
+pgport[4]=`jq -r '.pg14portwebreadwrite' ${config}`
+pgname[5]=`jq -r '.pg14namereadonly' ${config}`
+pgport[5]=`jq -r '.pg14portwebreadonly' ${config}`
+pgname[6]=`jq -r '.pg13name' ${config}`
+pgport[6]=`jq -r '.pg13portweb' ${config}`
+pgname[7]=`jq -r '.pg13namereadwrite' ${config}`
+pgport[7]=`jq -r '.pg13portwebreadwrite' ${config}`
+pgname[8]=`jq -r '.pg13namereadonly' ${config}`
+pgport[8]=`jq -r '.pg13portwebreadonly' ${config}`
+pgname[9]=`jq -r '.pg12name' ${config}`
+pgport[9]=`jq -r '.pg12portweb' ${config}`
+pgname[10]=`jq -r '.pg12namereadwrite' ${config}`
+pgport[10]=`jq -r '.pg12portwebreadwrite' ${config}`
+pgname[11]=`jq -r '.pg12namereadonly' ${config}`
+pgport[11]=`jq -r '.pg12portwebreadonly' ${config}`
+pgmax=`expr ${#pgname[*]} - 1`
+
+# ubuntu
+ubuntuname[0]=`jq -r '.ubuntu2004name' ${config}`
+ubuntuport[0]=`jq -r '.ubuntu2004webport' ${config}`
+ubuntuname[1]=`jq -r '.ubuntu2204name' ${config}`
+ubuntuport[1]=`jq -r '.ubuntu2204webport' ${config}`
+ubuntumax=`expr ${#ubuntuname[*]} - 1`
+
+# arch
+archname[0]=`jq -r '.archlatestname' ${config}`
+archport[0]=`jq -r '.archlatestwebport' ${config}`
+archmax=`expr ${#archname[*]} - 1`
+
+# ch
+chname[0]=`jq -r '.ch_21_3_20name' ${config}`
+chport[0]=`jq -r '.ch_21_3_20webport' ${config}`
+chmax=`expr ${#chname[*]} - 1`
+
+# citus
+citus_cn_name[0]=`jq -r '.citus_pg15_cn_name' ${config}`
+citus_cn_port[0]=`jq -r '.citus_pg15_cn_webport' ${config}`
+citus_dn1_name[0]=`jq -r '.citus_pg15_dn1_name' ${config}`
+citus_dn1_port[0]=`jq -r '.citus_pg15_dn1_webport' ${config}`
+citus_dn2_name[0]=`jq -r '.citus_pg15_dn2_name' ${config}`
+citus_dn2_port[0]=`jq -r '.citus_pg15_dn2_webport' ${config}`
+citus_max=`expr ${#citus_cn_name[*]} - 1`
+
+# k8s
+k8s_name[0]=kubectl
+k8s_image[0]=`jq -r '.kubectl_image' ${config}`
+k8s_config[0]=`jq -r '.kubectl_config' ${config}`
+k8s_port[0]=`jq -r '.k8sportweb' ${config}`
+k8s_max=`expr ${#k8s_name[*]} - 1`
+
+# parse argument
+while getopts "cdhsS" arg
+do
+	case $arg in
+		c)
+			do_create=1
+			;;
+		d)
+			do_delete=1
+			;;
+		h)
+			echo "webtools is util for manage postgresql"
+			echo "  -c        create the config file"
+			echo "  -d        delete the config file"
+			echo "  -h        help"
+			echo "  -s        start service"
+			echo "  -S        stop service"
+			exit 0
+			;;
+		s)
+			do_start=1
+			;;
+		S)
+			do_stop=1
+			;;
+		#p)
+		#	do_pause="$OPTARG"
+		#	;;
+		?)
+			echo "unknow argument"
+			exit 1
+			;;
+	esac
+done
+
+function create_service(){
+	service_name=$1
+	service_cmd=$2
+	service_file=/etc/systemd/system/${service_name}.service
+
+	echo "create service $service_name"
+
+cat > ${service_file} << EOF
+[Unit]
+Wants=network-online.target
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+KillMode=process
+Delegate=yes
+TasksMax=infinity
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+EOF
+	echo "ExecStart=${service_cmd} " >> ${service_file}
+}
+
+function create_utile(){
+	# postgres service
+	for i in `seq 0 $pgmax`
+	do
+		create_service ${pgname[$i]} "ttyd -p ${pgport[$i]} docker exec -it ${pgname[$i]} psql -U postgres"
+	done
+
+	# ubuntu service
+	for i in `seq 0 $ubuntumax`
+	do
+		create_service ${ubuntuname[$i]} "ttyd -p ${ubuntuport[$i]} docker exec -it ${ubuntuname[$i]} bash"
+	done
+
+	# arch service
+	for i in `seq 0 $archmax`
+	do
+		create_service ${archname[$i]} "ttyd -p ${archport[$i]} docker exec -it ${archname[$i]} bash"
+	done
+
+	# ch service
+	for i in `seq 0 $chmax`
+	do
+		create_service ${chname[$i]} "ttyd -p ${chport[$i]} docker exec -it ${chname[$i]} clickhouse-client"
+	done
+
+	# citus service
+	for i in `seq 0 $citus_max`
+	do
+		create_service ${citus_cn_name[$i]} "ttyd -p ${citus_cn_port[$i]} docker exec -it ${citus_cn_name[$i]} psql -U postgres"
+		create_service ${citus_dn1_name[$i]} "ttyd -p ${citus_dn1_port[$i]} docker exec -it ${citus_dn1_name[$i]} psql -U postgres"
+		create_service ${citus_dn2_name[$i]} "ttyd -p ${citus_dn2_port[$i]} docker exec -it ${citus_dn2_name[$i]} psql -U postgres"
+	done
+
+	# k8s service
+	create_service minikube "su - lzzhang -c 'minikube start --embed-certs=true && minikube ssh'"
+	for i in `seq 0 $k8s_max`
+	do
+		create_service ${k8s_name[$i]} "ttyd -p ${k8s_port[$i]} docker run -it --rm --net host -v ${k8s_config[$i]}:/.kube/config ${k8s_image[$i]}"
+	done
+}
+
+function delete_service(){
+	service_name=$1
+	echo "delete service $service_name"
+
+	/bin/rm -rf /etc/systemd/system/${service_name}.service
+}
+
+function delete_utile(){
+	# postgres service
+	for i in `seq 0 $pgmax`
+	do
+		delete_service ${pgname[$i]}
+	done
+
+	# ubuntu service
+	for i in `seq 0 $ubuntumax`
+	do
+		delete_service ${ubuntuname[$i]}
+	done
+
+	# arch service
+	for i in `seq 0 $archmax`
+	do
+		delete_service ${archname[$i]}
+	done
+
+	# ch service
+	for i in `seq 0 $chmax`
+	do
+		delete_service ${chname[$i]}
+	done
+
+	# citus service
+	for i in `seq 0 $citus_max`
+	do
+		delete_service ${citus_cn_name[$i]}
+		delete_service ${citus_dn1_name[$i]}
+		delete_service ${citus_dn2_name[$i]}
+	done
+
+	# k8s service
+	delete_service minikube
+	for i in `seq 0 $k8s_max`
+	do
+		delete_service ${k8s_name[$i]}
+	done
+}
+
+function start_service(){
+	service_name=$1
+	echo "start service $service_name"
+
+	systemctl start ${service_name}.service
+	systemctl enable ${service_name}.service
+}
+
+function start_detals() {
+	# ch detals
+	for i in `seq 0 $chmax`
+	do
+		docker exec ${chname[$i]} sed -i 's/<!-- <access_management/<access_management/g' /etc/clickhouse-server/users.xml
+		docker exec ${chname[$i]} sed -i 's/access_management> -->/access_management>/g' /etc/clickhouse-server/users.xml
+	done
+
+	# citus
+	for i in `seq 0 $citus_max`
+	do
+		docker exec ${citus_dn1_name[$i]} psql -U postgres -c 'create extension citus'
+		docker exec ${citus_dn2_name[$i]} psql -U postgres -c 'create extension citus'
+		docker exec ${citus_cn_name[$i]} psql -U postgres -c 'create extension citus'
+		sleep 1
+		docker exec ${citus_cn_name[$i]} psql -U postgres -c "SELECT * from citus_add_node('${citus_dn1_name[$i]}', 5432);"
+		docker exec ${citus_cn_name[$i]} psql -U postgres -c "SELECT * from citus_add_node('${citus_dn2_name[$i]}', 5432);"
+	done
+
+	# k8s
+	# su - lzzhang -c 'minikube start'
+}
+
+function stop_detals() {
+	# k8s
+	echo "stop minikube"
+	su - lzzhang -c 'minikube stop'
+	su - lzzhang -c 'minikube delete'
+	#if [ -d /home/lzzhang/minikube_init_data_backup ]
+	#then
+	#	echo "remove old minikube"
+	#	/bin/rm -rf /home/lzzhang/.minikube/
+	#	echo "restore minikube data"
+	#	su - lzzhang -c 'cp -rf /home/lzzhang/minikube_init_data_backup/1.21/minikube/ /home/lzzhang/.minikube'
+	#fi
+}
+
+function start_utile(){
+	echo "start docker compose"
+	docker-compose up -d
+
+	# postgres service
+	for i in `seq 0 $pgmax`
+	do
+		start_service ${pgname[$i]}
+	done
+
+	# ubuntu service
+	for i in `seq 0 $ubuntumax`
+	do
+		start_service ${ubuntuname[$i]}
+	done
+
+	# arch service
+	for i in `seq 0 $archmax`
+	do
+		start_service ${archname[$i]}
+	done
+
+	# ch service
+	for i in `seq 0 $chmax`
+	do
+		start_service ${chname[$i]}
+	done
+
+	# citus service
+	for i in `seq 0 $citus_max`
+	do
+		start_service ${citus_cn_name[$i]}
+		start_service ${citus_dn1_name[$i]}
+		start_service ${citus_dn2_name[$i]}
+	done
+
+	# k8s service
+	start_service minikube
+	for i in `seq 0 $k8s_max`
+	do
+		start_service ${k8s_name[$i]}
+	done
+
+
+	sleep 20 #waiting
+	start_detals
+}
+
+function stop_service(){
+	service_name=$1
+	echo "stop service $service_name"
+
+	systemctl disable ${service_name}.service
+	systemctl stop ${service_name}.service
+}
+
+function stop_utile(){
+	echo "stop docker compose"
+	docker-compose down
+
+	# postgres service
+	for i in `seq 0 $pgmax`
+	do
+		stop_service ${pgname[$i]}
+	done
+
+	# ubuntu service
+	for i in `seq 0 $ubuntumax`
+	do
+		stop_service ${ubuntuname[$i]}
+	done
+
+	# arch service
+	for i in `seq 0 $archmax`
+	do
+		stop_service ${archname[$i]}
+	done
+
+	# ch service
+	for i in `seq 0 $chmax`
+	do
+		stop_service ${chname[$i]}
+	done
+
+	# citus service
+	for i in `seq 0 $citus_max`
+	do
+		stop_service ${citus_cn_name[$i]}
+		stop_service ${citus_dn1_name[$i]}
+		stop_service ${citus_dn2_name[$i]}
+	done
+
+	# k8s service
+	stop_service minikube
+	for i in `seq 0 $k8s_max`
+	do
+		stop_service ${k8s_name[$i]}
+	done
+
+	stop_detals
+}
+
+if [ "${do_create}" = 1 ]; then
+	create_utile
+fi
+
+if [ "${do_delete}" = 1 ]; then
+	delete_utile
+fi
+
+if [ "${do_start}" = 1 ]; then
+	start_utile
+fi
+
+if [ "${do_stop}" = 1 ]; then
+	stop_utile
+fi
+
+exit 0

@@ -1,0 +1,471 @@
+version: '3'
+
+networks:
+  bitnet:
+
+services:
+  pg15-single:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "{{ .pg15name }}"
+    command: postgres
+    restart: always
+    environment:
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    ports:
+      - "{{ .pg15port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  pg15-auto:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "pg15-auto"
+    command: auto_failover
+    restart: always
+    environment:
+      PG_MODE: monitor
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg15-auto
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    healthcheck:
+      #test: ["CMD", "psql", "-p", "55555", "-U", "postgres", "-c", "select 1"]
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 60s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bitnet
+  pg15-readwrite:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "{{ .pg15namereadwrite }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg15-auto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg15portreadwrite }}:5432"
+    environment:
+      PG_MODE: readwrite
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg15-readwrite
+      MONITOR_HOSTNAME: pg15-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    networks:
+      - bitnet
+  pg15-readonly:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "{{ .pg15namereadonly }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg15-auto:
+        condition: service_healthy
+      pg15-readwrite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg15portreadonly }}:5432"
+    environment:
+      PG_MODE: readonly
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg15-readonly
+      MONITOR_HOSTNAME: pg15-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_STREAMING: sync
+    networks:
+      - bitnet
+  pg14-single:
+    image: "radondb/radondb-postgresql:14.5-v1.2.0"
+    container_name: "{{ .pg14name }}"
+    command: postgres
+    environment:
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    restart: always
+    ports:
+      - "{{ .pg14port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  pg14-auto:
+    image: "radondb/radondb-postgresql:14.5-v1.2.0"
+    container_name: "pg14-auto"
+    command: auto_failover
+    restart: always
+    environment:
+      PG_MODE: monitor
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg14-auto
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    healthcheck:
+      #test: ["CMD", "psql", "-p", "55555", "-U", "postgres", "-c", "select 1"]
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 60s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bitnet
+  pg14-readwrite:
+    image: "radondb/radondb-postgresql:14.5-v1.2.0"
+    container_name: "{{ .pg14namereadwrite }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg14-auto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg14portreadwrite }}:5432"
+    environment:
+      PG_MODE: readwrite
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg14-readwrite
+      MONITOR_HOSTNAME: pg14-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    networks:
+      - bitnet
+  pg14-readonly:
+    image: "radondb/radondb-postgresql:14.5-v1.2.0"
+    container_name: "{{ .pg14namereadonly }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg14-auto:
+        condition: service_healthy
+      pg14-readwrite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg14portreadonly }}:5432"
+    environment:
+      PG_MODE: readonly
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg14-readonly
+      MONITOR_HOSTNAME: pg14-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_STREAMING: sync
+    networks:
+      - bitnet
+  pg13-single:
+    image: "radondb/radondb-postgresql:13.8-v1.2.0"
+    container_name: "{{ .pg13name }}"
+    command: postgres
+    environment:
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    restart: always
+    ports:
+      - "{{ .pg13port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  pg13-auto:
+    image: "radondb/radondb-postgresql:13.8-v1.2.0"
+    container_name: "pg13-auto"
+    command: auto_failover
+    restart: always
+    environment:
+      PG_MODE: monitor
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg13-auto
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    healthcheck:
+      #test: ["CMD", "psql", "-p", "55555", "-U", "postgres", "-c", "select 1"]
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 60s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bitnet
+  pg13-readwrite:
+    image: "radondb/radondb-postgresql:13.8-v1.2.0"
+    container_name: "{{ .pg13namereadwrite }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg13-auto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg13portreadwrite }}:5432"
+    environment:
+      PG_MODE: readwrite
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg13-readwrite
+      MONITOR_HOSTNAME: pg13-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    networks:
+      - bitnet
+  pg13-readonly:
+    image: "radondb/radondb-postgresql:13.8-v1.2.0"
+    container_name: "{{ .pg13namereadonly }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg13-auto:
+        condition: service_healthy
+      pg13-readwrite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg13portreadonly }}:5432"
+    environment:
+      PG_MODE: readonly
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg13-readonly
+      MONITOR_HOSTNAME: pg13-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_STREAMING: sync
+    networks:
+      - bitnet
+  pg12-single:
+    image: "radondb/radondb-postgresql:12.12-v1.2.0"
+    container_name: "{{ .pg12name }}"
+    command: postgres
+    environment:
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    restart: always
+    ports:
+      - "{{ .pg12port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  pg12-auto:
+    image: "radondb/radondb-postgresql:12.12-v1.2.0"
+    container_name: "pg12-auto"
+    command: auto_failover
+    restart: always
+    environment:
+      PG_MODE: monitor
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg12-auto
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    healthcheck:
+      #test: ["CMD", "psql", "-p", "55555", "-U", "postgres", "-c", "select 1"]
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 60s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bitnet
+  pg12-readwrite:
+    image: "radondb/radondb-postgresql:12.12-v1.2.0"
+    container_name: "{{ .pg12namereadwrite }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg12-auto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg12portreadwrite }}:5432"
+    environment:
+      PG_MODE: readwrite
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg12-readwrite
+      MONITOR_HOSTNAME: pg12-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    networks:
+      - bitnet
+  pg12-readonly:
+    image: "radondb/radondb-postgresql:12.12-v1.2.0"
+    container_name: "{{ .pg12namereadonly }}"
+    command: auto_failover
+    restart: always
+    depends_on:
+      pg12-auto:
+        condition: service_healthy
+      pg12-readwrite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgtools", "-a"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ports:
+      - "{{ .pg12portreadonly }}:5432"
+    environment:
+      PG_MODE: readonly
+      AUTOCTL_NODE_PASSWORD: postgres
+      EXTERNAL_HOSTNAME: pg12-readonly
+      MONITOR_HOSTNAME: pg12-auto
+      AUTOCTL_REPLICATOR_PASSWORD: postgres
+      PG_CONFIG_port: 5432
+      PG_STREAMING: sync
+    networks:
+      - bitnet
+  webserver:
+    image: "{{ .web_image }}"
+    # curl -s http://127.0.0.1:18080 -o /dev/null
+    container_name: webserver
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://{{ .domain }}:{{ .nicegui_port }}"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    ports:
+      - "{{ .nicegui_port }}:{{ .nicegui_port }}"
+    networks:
+      - bitnet
+  ubuntu-2004:
+    image: ubuntu:20.04
+    container_name: "{{ .ubuntu2004name }}"
+    command: /bin/bash -c -- 'while true; do sleep 3600; done;'
+    restart: always
+    networks:
+      - bitnet
+  ubuntu-2204:
+    image: ubuntu:22.04
+    container_name: "{{ .ubuntu2204name }}"
+    command: /bin/bash -c -- 'while true; do sleep 3600; done;'
+    restart: always
+    networks:
+      - bitnet
+  arch-latest:
+    image: archlinux:latest
+    container_name: "{{ .archlatestname }}"
+    command: /bin/bash -c -- 'while true; do sleep 3600; done;'
+    restart: always
+    networks:
+      - bitnet
+  clickhouse-21-3-20:
+    image: yandex/clickhouse-server:21.3.20
+    container_name: "{{ .ch_21_3_20name }}"
+    restart: always
+    ports:
+      - "{{ .ch_21_3_20porthttp }}:8123"
+      - "{{ .ch_21_3_20porttcp }}:9000"
+    networks:
+      - bitnet
+  citus-pg15-cn:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "{{ .citus_pg15_cn_name }}"
+    command: postgres
+    restart: always
+    environment:
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    ports:
+      - "{{ .citus_pg15_cn_port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  citus-pg15-dn1:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "{{ .citus_pg15_dn1_name }}"
+    command: postgres
+    restart: always
+    environment:
+      PG_CONFIG_port: 5432
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+      PG_HBA_1: "host all all all trust"
+    ports:
+      - "{{ .citus_pg15_dn1_port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  citus-pg15-dn2:
+    image: "radondb/radondb-postgresql:15.0-v1.2.0"
+    container_name: "{{ .citus_pg15_dn2_name }}"
+    command: postgres
+    restart: always
+    environment:
+      PG_CONFIG_port: 5432
+      PG_HBA_1: "host all all all trust"
+      PG_CONFIG_shared_preload_libraries: "'citus,pgautofailover,pg_stat_statements,pgaudit'"
+    ports:
+      - "{{ .citus_pg15_dn2_port }}:5432"
+    networks:
+      - bitnet
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "select 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
