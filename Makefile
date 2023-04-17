@@ -12,14 +12,16 @@
 #-------------------------------------------------------------------------
 FILEDESC = "4bits.cn"
 
-all: image compose
+all: web-image kubectl-image compose
 
-image:
+web-image:
 	/bin/rm -rf  ./server/webserver/web
 	cp -rf ./web ./server/webserver/web
 	cp -rf ./config.json ./server/webserver/config.json
 	cd ./server/webserver/; \
 		docker build -t `jq -r '.web_image' config.json` .
+
+kubectl-image:
 	cp -rf ./config.json ./server/kubectl/1.21/config.json
 	cd ./server/kubectl/1.21/; \
 		docker build -t `jq -r '.kubectl_image' config.json` .
