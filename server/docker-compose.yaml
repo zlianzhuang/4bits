@@ -369,7 +369,7 @@ services:
     networks:
       - bitnet
   webserver:
-    image: "zlianzhuang/web-server:v1.0.0"
+    image: "zlianzhuang/web-server:v1.0.1"
     # curl -s http://127.0.0.1:18080 -o /dev/null
     container_name: webserver
     restart: always
