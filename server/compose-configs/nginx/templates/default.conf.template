@@ -1,0 +1,15 @@
+server {
+        listen 80;
+        server_name 4bits.cn;
+        location / {
+		proxy_pass http://webserver:8080;
+        }
+}
+
+server {
+        listen 80;
+        server_name www.4bits.cn;
+        location / {
+		proxy_pass http://webserver:8080;
+        }
+}

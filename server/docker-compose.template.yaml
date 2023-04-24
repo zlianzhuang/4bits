@@ -469,3 +469,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+  nginx:
+    image: nginx
+    volumes:
+     - ./compose-configs/nginx/templates:/etc/nginx/templates
+    networks:
+      - bitnet
+    ports:
+    - "80:80"
+    #net: host
+

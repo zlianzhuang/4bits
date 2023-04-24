@@ -369,18 +369,18 @@ services:
     networks:
       - bitnet
   webserver:
-    image: "zlianzhuang/web-server:v1.0.2"
+    image: "zlianzhuang/web-server:v1.0.3"
     # curl -s http://127.0.0.1:18080 -o /dev/null
     container_name: webserver
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-s", "http://4bits.cn:80"]
+      test: ["CMD", "curl", "-s", "http://4bits.cn:8080"]
       interval: 10s
       timeout: 10s
       retries: 3
       start_period: 30s
     ports:
-      - "80:80"
+      - "8080:8080"
     networks:
       - bitnet
   ubuntu-2004:
@@ -469,3 +469,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+  nginx:
+    image: nginx
+    volumes:
+     - ./compose-configs/nginx/templates:/etc/nginx/templates
+    networks:
+      - bitnet
+    ports:
+    - "80:80"
+    #net: host
+

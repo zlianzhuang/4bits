@@ -31,3 +31,7 @@ compose:
 	cp jq-template.awk ./server/jq-template.awk
 	cd ./server/; \
 		awk -f jq-template.awk docker-compose.template.yaml > docker-compose.yaml
+	cp config.json ./server/compose-configs/nginx/templates/versions.json
+	cp jq-template.awk ./server//compose-configs/nginx/templates/jq-template.awk
+	cd ./server/compose-configs/nginx/templates; \
+		awk -f jq-template.awk default.conf.template.conf > default.conf.template
