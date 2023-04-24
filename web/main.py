@@ -133,8 +133,19 @@ def get_html(portweb):
 
 get_config()
 
+def add_head():
+    # baidu
+    ui.add_head_html('<meta name="baidu-site-verification" content="codeva-I7AxdLw3ny" />')
+    # bing
+    ui.add_head_html('<meta name="msvalidate.01" content="5D84CEB38F10AD8E25481AEC17CF252B" />')
+    # google
+    ui.add_head_html('<meta name="google-site-verification" content="yNlFqQ4ehwapHJNZVMpNJgH3Ab1i5q_-5VlkqPg1KFI" />')
+
+
 @ui.page('/')
 async def homepage():
+    add_head()
+
     with ui.tabs() as tabs:
         ui.tab('Home', icon='home')
         ui.tab('PostgreSQL', icon='img:images/pg_icon.png')
