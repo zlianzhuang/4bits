@@ -1,7 +1,7 @@
 {
     "nicegui_port": "8080",
     "domain": "4bits.cn",
-    "web_image": "zlianzhuang/web-server:v1.0.3",
+    "web_image": "zlianzhuang/web-server:v1.0.4",
     "kubectl_image": "zlianzhuang/kubectl:v1.21.0",
     "kubectl_config": "/home/lzzhang/.kube/config",
     "pg15name": "pg15",

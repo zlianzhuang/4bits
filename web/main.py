@@ -68,7 +68,7 @@ CF_K8S_PORT_WEB = "k8sportweb"
 # other
 INTRODUCE = '''# 4比特
 
-**4比特=半字节(4bits=half byte)**是一个可以在线使用**PostgreSQL/k8S/ArchLinux**等多种服务在线网站, 并由**青云科技**提供计算服务
+**4比特=半字节**是一个可以在线使用**PostgreSQL Citus Clickhouse K8S Arch Ubuntu**等多种服务在线网站, 仅需点击 **两次鼠标** 即可达到所需服务，并由**青云科技**提供计算服务
 
 
 
@@ -341,4 +341,4 @@ folder = Path(__file__).resolve().parent / 'images'
 app.add_static_files('/images', folder)
 
 # run
-ui.run(favicon='images/title.jpg', title='4比特|在线服务', port=int(CONFIG[CF_NICEGUI_PORT]))
+ui.run(favicon='images/title.jpg', title='半字节 在线服务', port=int(CONFIG[CF_NICEGUI_PORT]))
