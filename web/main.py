@@ -135,7 +135,7 @@ get_config()
 
 def add_head():
     # baidu
-    ui.add_head_html('<meta name="baidu-site-verification" content="codeva-I7AxdLw3ny" />')
+    ui.add_head_html('<meta name="baidu-site-verification" content="codeva-Yvu6GP0rdY" />')
     # bing
     ui.add_head_html('<meta name="msvalidate.01" content="5D84CEB38F10AD8E25481AEC17CF252B" />')
     # google
