@@ -66,7 +66,7 @@ CF_CITUS_PG15_DN2_PORT_WEB =	"citus_pg15_dn2_webport"
 CF_K8S_PORT_WEB = "k8sportweb"
 
 # other
-INTRODUCE = '''# 4比特
+INTRODUCE = '''# 半字节
 
 **4比特=半字节**是一个可以在线使用**PostgreSQL Citus Clickhouse K8S Arch Ubuntu**等多种服务在线网站, 仅需点击 **两次鼠标** 即可达到所需服务，并由**青云科技**提供计算服务
 
